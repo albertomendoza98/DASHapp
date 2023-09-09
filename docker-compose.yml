@@ -93,7 +93,7 @@ services:
     networks:
       - ewb-net
     environment:
-      RESTAPI_URL: http://localhost:82
+      RESTAPI_URL: http://ewb-restapi:82
     volumes:
       - ./dash-app:/dash-app  
       - ./data/source:/data/source

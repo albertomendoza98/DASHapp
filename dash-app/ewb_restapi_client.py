@@ -22,12 +22,11 @@ class RestAPIResponse(object):
                  resp: requests.Response,
                  logger: logging.Logger) -> None:
 
-        # Get JSON object of the result
-        resp = resp.json()
+        # Get status code
+        self.status_code = resp.status_code
 
-        self.status_code = resp['responseHeader']['status']
-        self.time = resp['responseHeader']['time']
-        self.results = resp['response']
+        # Get JSON object of the result
+        self.results = resp.json()
 
         if self.status_code == 200:
             logger.info(f"-- -- RestAPI request acknowledged")
@@ -52,7 +51,6 @@ class EWBRestapiClient(object):
 
         # Get the RestAPI URL from the environment variables
         self.restapi_url = os.environ.get('RESTAPI_URL')
-        
 
         # Initialize requests session and logger
         self.restapi = requests.Session()
@@ -63,7 +61,7 @@ class EWBRestapiClient(object):
             import logging
             logging.basicConfig(level='DEBUG')
             self.logger = logging.getLogger('Restapi')
-        
+
         return
 
     def _do_request(self,
@@ -97,7 +95,6 @@ class EWBRestapiClient(object):
                 timeout=timeout,
                 **params
             )
-            pass
         elif type == "post":
             resp = requests.post(
                 url=url,
@@ -114,7 +111,7 @@ class EWBRestapiClient(object):
         return api_resp
 
     def open_access(self,
-                  selected_category: str) -> RestAPIResponse:
+                    selected_category: str) -> RestAPIResponse:
         """Execute query to filter by open access.
 
         Parameters
@@ -147,7 +144,7 @@ class EWBRestapiClient(object):
             type="get", url=url_, timeout=120, headers=headers_, params=params_)
 
         return api_resp
-    
+
     def corpus_metadata(self) -> RestAPIResponse:
         """Execute query to filter by open access.
 
@@ -163,7 +160,7 @@ class EWBRestapiClient(object):
         InferencerResponse: InferencerResponse
             An object of the InferencerResponse class.
         """
-        
+
         headers_ = {'Accept': 'application/json'}
 
         params_ = {
@@ -178,7 +175,3 @@ class EWBRestapiClient(object):
             type="get", url=url_, timeout=120, headers=headers_, params=params_)
 
         return api_resp
-        
-        
-
-
