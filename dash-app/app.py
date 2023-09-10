@@ -8,7 +8,7 @@ import plotly.express as px
 from dash.dependencies import Input, Output
 
 # Import auxiliary functions from utils.py
-from utils import get_color_gradient, range_label, determine_text_position, filter_dataframe_by_continent, load_figures
+from utils import get_color_gradient, range_label, determine_text_position, filter_dataframe_by_continent, load_figures, split_and_remove_duplicates_country, split_and_remove_duplicates_cities
 from utils import c1, c2, c3, c4, c5, c6, c7, c8
 from ewb_restapi_client import EWBRestapiClient
 
@@ -21,8 +21,11 @@ restapi = EWBRestapiClient(logger)
 df = pd.read_parquet('/data/source/SCOPUS.parquet/SCOPUS_5_percentage.parquet')
 
 # ------------ TOP 25 CITIES ------------ #
-# Split the cities separated by ";" into independent rows and get the count of each city
-city_count = df['affiliation_city'].str.split(";").explode('affiliation_city').value_counts()
+# Aplica la función a cada fila
+new_df = df.apply(split_and_remove_duplicates_cities, axis=1)
+# Luego, puedes obtener el recuento de ciudades únicas
+city_count = new_df.stack().value_counts()
+
 # Create a new DataFrame with two columns: 'City' and 'Count'
 df_city_count = pd.DataFrame({'city': city_count.index, 'count': city_count.values})
 # Remove empty rows and select the top 25 cities
@@ -60,7 +63,7 @@ fund_sponsor_count = df['fund_sponsor'].str.split(";").explode('fund_sponsor').v
 # Create a new DataFrame with two columns: 'Funding Sponsor' and 'Count'
 df_fund_sponsor_count = pd.DataFrame({'fund_sponsor': fund_sponsor_count.index, 'num_projects': fund_sponsor_count.values})
 # Remove empty rows and select 
-df_fund_sponsor_count = df_fund_sponsor_count[df_fund_sponsor_count['fund_sponsor'] != ''].reset_index(drop=True).head(25).sort_values(by='num_projects', ascending=True)
+df_fund_sponsor_count = df_fund_sponsor_count[df_fund_sponsor_count['fund_sponsor'] != ''].reset_index(drop=True).head(50).sort_values(by='num_projects', ascending=True)
 # Create a bar chart with the top 25 cities
 fig_fund_sponsor = px.bar(df_fund_sponsor_count, x='num_projects', y='fund_sponsor', 
               orientation='h', 
@@ -116,9 +119,13 @@ fig_years = px.line(publication_counts, x='Year', y='Number of Publications', la
 fig_years.update_layout(title_x=0.5)
 
 # ---------------------- MAP ----------------------- #
-country_count = df['affiliation_country'].str.split(";").explode('affiliation_country').value_counts()
-df_city_count = pd.DataFrame({'country': country_count.index, 'count': country_count.values})
-df_city_count.drop(df_city_count[df_city_count['country'] == 'Spain'].index, inplace = True)
+# Aplica la función a cada fila
+new_df = df.apply(split_and_remove_duplicates_country, axis=1)
+# Luego, puedes obtener el recuento de ciudades únicas
+country_count = new_df.stack().value_counts()
+
+df_country_count = pd.DataFrame({'country': country_count.index, 'count': country_count.values})
+df_country_count.drop(df_country_count[df_country_count['country'] == 'Spain'].index, inplace = True)
 
 # Define the options for the Dropdown menu based on the valid 'scope' values
 continent_options = [
@@ -131,7 +138,7 @@ continent_options = [
 ]
 
 # Create the choropleth map using Plotly Express (keep this outside the layout function)
-fig_map = px.choropleth(df_city_count,
+fig_map = px.choropleth(df_country_count,
                     locations="country",
                     locationmode='country names',
                     color="count",
@@ -197,7 +204,7 @@ app.layout = html.Div([
 )
 def update_map(selected_continent):
     # Filter the DataFrame based on the selected continent
-    filtered_df = filter_dataframe_by_continent(df_city_count, selected_continent)
+    filtered_df = filter_dataframe_by_continent(df_country_count, selected_continent)
 
     # Create a new choropleth map with the filtered DataFrame
     updated_fig = px.choropleth(filtered_df,

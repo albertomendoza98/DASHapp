@@ -700,28 +700,17 @@ class EWBSolrClient(SolrClient):
 
     def do_Q4(self,
               corpus_col: str,
-              model_name: str,
-              topic_id: str,
-              thr: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+              year: str,
+              ) -> Union[dict, int]:
         """Executes query Q4.
 
         Parameters
         ----------
         corpus_col : str
             Name of the corpus collection
-        model_name: str
-            Name of the model to be used for the retrieval
-        topic_id: str
-            ID of the topic to be retrieved
-        thr: str
-            Threshold to be used for the retrieval
-        start: str
-            Offset into the responses at which Solr should begin displaying content
-        rows: str
-            How many rows of responses are displayed at a time 
-
+        year: str
+            Publication year to filter by
+        
         Returns
         -------
         json_object: dict
@@ -730,24 +719,19 @@ class EWBSolrClient(SolrClient):
             The status code of the response.  
         """
 
-        # 0. Convert corpus and model names to lowercase
+        # 0. Convert corpus name to lowercase
         corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
 
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
-
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-
-        # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
         # 4. Execute query
         q4 = self.querier.customize_Q4(
-            model_name=model_name, topic=topic_id, threshold=thr, start=start, rows=rows)
+            year=year, start=start, rows=rows)
         params = {k: v for k, v in q4.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -762,24 +746,15 @@ class EWBSolrClient(SolrClient):
 
     def do_Q5(self,
               corpus_col: str,
-              model_name: str,
-              doc_id: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+              continent: str) -> Union[dict, int]:
         """Executes query Q5.
 
         Parameters
         ----------
         corpus_col : str
             Name of the corpus collection
-        model_name: str
-            Name of the model to be used for the retrieval
-        doc_id: str
-            ID of the document whose similarity is going to be checked against all other documents in 'corpus_col'
-         start: str
-            Offset into the responses at which Solr should begin displaying content
-        rows: str
-            How many rows of responses are displayed at a time 
+        continent: str
+            Continent through which the document collection is to be filtered
 
         Returns
         -------
@@ -789,48 +764,18 @@ class EWBSolrClient(SolrClient):
             The status code of the response.  
         """
 
-        # 0. Convert corpus and model names to lowercase
+        # 0. Convert corpus name to lowercase
         corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
 
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-
-        # 3. Execute Q1 to get thetas of document given by doc_id
-        thetas_dict, sc = self.do_Q1(
-            corpus_col=corpus_col, model_name=model_name, doc_id=doc_id)
-        thetas = thetas_dict['thetas']
-
-        # 4. Check that thetas are available on the document given by doc_id. If not, infer them
-        if thetas == -1:
-            # Get text (lemmas) of the document so its thetas can be inferred
-            lemmas_dict, sc = self.do_Q15(
-                corpus_col=corpus_col, doc_id=doc_id)
-            lemmas = lemmas_dict['lemmas']
-
-            inf_resp = self.inferencer.infer_doc(text_to_infer=lemmas,
-                                                 model_for_inference=model_name)
-            if inf_resp.status_code != 200:
-                self.logger.error(
-                    f"-- -- Error attaining thetas from {lemmas} while executing query Q5. Aborting operation...")
-                return
-
-            thetas = inf_resp.results[0]['thetas']
-            self.logger.info(
-                f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
-
-        # 4. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
-
-        # 5. Execute query
-        q5 = self.querier.customize_Q5(
-            model_name=model_name, thetas=thetas,
-            start=start, rows=rows)
+        # 3. Execute query
+        q5 = self.querier.customize_Q5(continent=continent, start=start, rows=rows)
         params = {k: v for k, v in q5.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -841,23 +786,19 @@ class EWBSolrClient(SolrClient):
                 f"-- -- Error executing query Q5. Aborting operation...")
             return
 
-        # 6. Normalize scores
-        for el in results.docs:
-            el['score'] *= (100/(self.max_sum ^ 2))
-
         return results.docs, sc
 
     def do_Q6(self,
               corpus_col: str,
-              doc_id: str) -> Union[dict, int]:
+              city: str) -> Union[dict, int]:
         """Executes query Q6.
 
         Parameters
         ----------
         corpus_col: str
             Name of the corpus collection
-        doc_id: str
-            ID of the document whose metadata is going to be retrieved
+        city: str
+            City by which to filter the document collection
 
         Returns
         -------
@@ -873,13 +814,12 @@ class EWBSolrClient(SolrClient):
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
-
-        # 2. Get meta fields
-        meta_fields_dict, sc = self.do_Q2(corpus_col)
-        meta_fields = ','.join(meta_fields_dict['metadata_fields'])
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
         # 3. Execute query
-        q6 = self.querier.customize_Q6(id=doc_id, meta_fields=meta_fields)
+        q6 = self.querier.customize_Q6(city=city, start=start, rows=rows)
         params = {k: v for k, v in q6.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -894,17 +834,15 @@ class EWBSolrClient(SolrClient):
 
     def do_Q7(self,
               corpus_col: str,
-              string: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+              institution: str) -> Union[dict, int]:
         """Executes query Q7.
 
         Parameters
         ----------
         corpus_col: str
             Name of the corpus collection
-        string: str
-            String to be searched in the title of the documents
+        institution: str
+            Institution by which to filter the document collection
 
         Returns
         -------
@@ -920,29 +858,12 @@ class EWBSolrClient(SolrClient):
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
-        # 2. Get number of docs in the collection (it will be the maximum number of docs to be retireved) if rows is not specified
-        if rows is None:
-            q3 = self.querier.customize_Q3()
-            params = {k: v for k, v in q3.items() if k != 'q'}
-
-            sc, results = self.execute_query(
-                q=q3['q'], col_name=corpus_col, **params)
-
-            if sc != 200:
-                self.logger.error(
-                    f"-- -- Error executing query Q3. Aborting operation...")
-                return
-            rows = results.hits
-        if start is None:
-            start = str(0)
-
-        # 2. Execute query
-        q7 = self.querier.customize_Q7(
-            title_field='title',
-            string=string,
-            start=start,
-            rows=rows)
+        # 3. Execute query
+        q7 = self.querier.customize_Q7(institution=institution, start=start, rows=rows)
         params = {k: v for k, v in q7.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -1165,87 +1086,58 @@ class EWBSolrClient(SolrClient):
         return {'betas': results.docs[0]['betas']}, sc
 
     def do_Q12(self,
-               model_col: str,
-               topic_id: str,
-               start: str,
-               rows: str) -> Union[dict, int]:
+               corpus_col: str,
+               lower_limit: str,
+               upper_limit: str) -> Union[dict, int]:
         """Executes query Q12.
 
         Parameters
         ----------
-        model_col: str
-           Name of the model to be used for the retrieval of most correlated topics to a given topic
-        topic_id: str
-            ID of the topic whose most correlated topics will be retrieved
-        start: str
-            Index of the first document to be retrieved
-        rows: str
-            Number of documents to be retrieved
+        corpus_col: str
+           Name of the corpus collection.
+        lower_limit: str
+            Lower limit to filter by number of citations
+        upper_limit: str
+            Upper limit to filter by number of citations
+
         """
 
-        # 0. Convert model name to lowercase
-        model_col = model_col.lower()
+        # 0. Convert corpus name to lowercase
+        corpus_col = corpus_col.lower()
 
-        # 1. Check that model_col is indeed a model collection
-        if not self.check_is_model(model_col):
+        # 1. Check that corpus_col is indeed a corpus collection
+        if not self.check_is_corpus(corpus_col):
             return
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
-        # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, model_col)
-
-        # 3. Execute Q11 to get betas of topic given by topic_id
-        betas_dict, sc = self.do_Q11(model_col=model_col, topic_id=topic_id)
-        betas = betas_dict['betas']
-
-        # 4. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, model_col)
-
-        # 5. Execute query
-        q12 = self.querier.customize_Q12(
-            betas=betas,
-            start=start,
-            rows=rows)
+        # 3. Execute query
+        q12 = self.querier.customize_Q12(lower_limit=lower_limit, upper_limit=upper_limit, start=start, rows=10)
         params = {k: v for k, v in q12.items() if k != 'q'}
 
         sc, results = self.execute_query(
-            q=q12['q'], col_name=model_col, **params)
+            q=q12['q'], col_name=corpus_col, **params)
 
         if sc != 200:
             self.logger.error(
-                f"-- -- Error executing query Q5. Aborting operation...")
+                f"-- -- Error executing query Q12. Aborting operation...")
             return
-
-        # 6. Normalize scores
-        self.logger.info(f"-- --Results: {results.docs}")
-        for el in results.docs:
-            el['score'] *= (100/(self.max_sum ^ 2))
 
         return results.docs, sc
 
     def do_Q13(self,
                corpus_col: str,
-               model_name: str,
-               lower_limit: str,
-               upper_limit: str,
-               year:str,
-               num_records: int) -> Union[dict, int]:
+               fund_sponsor: str) -> Union[dict, int]:
         
         """Executes query Q13.
 
         Parameters
         ----------
         corpus_col : str
-            Name of the corpus collection
-        model_name: str
-            Name of the model to be used for the retrieval
-        lower_limit: str
-            Lower percentage of semantic similarity to retrieve pairs of documents
-        upper_limit: str
-            Upper percentage of semantic similarity to retrieve pairs of documents
-        year: str
-            Publication year to be filtered by
-        num_records: str
-            How many rows of responses are displayed at a time 
+            Name of the corpus collection.
+        fund_sponsor: str
+            Funding Sponsor by which to filter the document collection.
 
         Returns
         -------
@@ -1255,118 +1147,27 @@ class EWBSolrClient(SolrClient):
             The status code of the response.  
         """
 
-        # 0. Convert corpus and model names to lowercase
+        # 0. Convert corpus name to lowercase
         corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
 
         # 1. Check that corpus_col is indeed a corpus collection
         if not self.check_is_corpus(corpus_col):
             return
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-
-        # 3. Return total number of documents in the collection.
-        start, rows = self.custom_start_and_rows(None, None, corpus_col)
-
-        # 5. Execute query (Returns in the score the indexes between the similarities field of each document that are within the range specified in the query)
-        q13 = self.querier.customize_Q13(
-            model_name=model_name, lower_limit=lower_limit,
-            upper_limit=upper_limit, year=year, start=start, rows=rows)
+        # 3. Execute query
+        q13 = self.querier.customize_Q13(fund_sponsor=fund_sponsor, start=start, rows=rows)
         params = {k: v for k, v in q13.items() if k != 'q'}
 
-        sc, score = self.execute_query(
+        sc, results = self.execute_query(
             q=q13['q'], col_name=corpus_col, **params)
 
         if sc != 200:
             self.logger.error(
                 f"-- -- Error executing query Q13. Aborting operation...")
             return
-
-        # 6. Process the results
-        df_score = pd.DataFrame(score.docs) 
-        dict_sims = self.pairs_sims_process(df_score, model_name=model_name, num_records=int(num_records))
-
-        # 7. Normalize scores
-        for el in dict_sims:
-            el['score'] = 100 * el['score']
-
-        return dict_sims, sc
-
-    def do_Q14(self,
-               corpus_col: str,
-               model_name: str,
-               text_to_infer: str,
-               start: str,
-               rows: str) -> Union[dict, int]:
-        """Executes query Q14.
-
-        Parameters
-        ----------
-        corpus_col : str
-            Name of the corpus collection
-        model_name: str
-            Name of the model to be used for the retrieval
-        text_to_infer: str
-            Text to be inferred
-         start: str
-            Offset into the responses at which Solr should begin displaying content
-        rows: str
-            How many rows of responses are displayed at a time 
-
-        Returns
-        -------
-        json_object: dict
-            JSON object with the results of the query.
-        sc : int
-            The status code of the response.  
-        """
-
-        # 0. Convert corpus and model names to lowercase
-        corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
-
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
-            return
-
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-
-        # 3. Make request to Inferencer API to get thetas of text_to_infer
-        inf_resp = self.inferencer.infer_doc(text_to_infer=text_to_infer,
-                                             model_for_inference=model_name)
-        if inf_resp.status_code != 200:
-            self.logger.error(
-                f"-- -- Error attaining thetas from {text_to_infer} while executing query Q14. Aborting operation...")
-            return
-
-        thetas = inf_resp.results[0]['thetas']
-        self.logger.info(
-            f"-- -- Thetas attained in {inf_resp.time} seconds: {thetas}")
-
-        # 4. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
-
-        # 5. Execute query
-        q14 = self.querier.customize_Q14(
-            model_name=model_name, thetas=thetas,
-            start=start, rows=rows)
-        params = {k: v for k, v in q14.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q14['q'], col_name=corpus_col, **params)
-
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q14. Aborting operation...")
-            return
-
-        # 6. Normalize scores
-        for el in results.docs:
-            el['score'] *= (100/(self.max_sum ^ 2))
 
         return results.docs, sc
 

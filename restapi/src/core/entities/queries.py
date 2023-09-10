@@ -12,10 +12,8 @@ class Queries(object):
     def __init__(self) -> None:
 
         # ================================================================
-        # # Q1: getThetasDocById  ##################################################################
-        # # Get document-topic distribution of a selected document in a
-        # # corpus collection
-        # http://localhost:8983/solr/{col}/select?fl=doctpc_{model}&q=id:{id}
+        # # Q1: getOpenAccess  ##################################################################
+        # # Get collection filter by Open Access or Subscription
         # ================================================================
         self.Q1 = {
             'q': 'openaccess:{}',
@@ -46,62 +44,40 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q4: GetDocsWithThetasLargerThanThr ##################################################################
-        # # Get documents that have a proportion of a certain topic larger
-        # # than a threshold
-        # q={!payload_check f=doctpc_{tpc} payloads="{thr}" op="gte"}t{tpc}
+        # # Q4: getDocsByYear ##################################################################
+        # # Get collection filter by year
         # ================================================================
         self.Q4 = {
-            'q': "{{!payload_check f=doctpc_{} payloads='{}' op='gte'}}t{}",
-            'start': '{}',
-            'rows': '{}',
-            'fl': "id,doctpc_{}"
-        }
-
-        # ================================================================
-        # # Q5: getDocsWithHighSimWithDocByid
-        # ################################################################
-        # # Retrieve documents that have a high semantic relationship with
-        # # a selected document
-        # ---------------------------------------------------------------
-        # Previous steps:
-        # ---------------------------------------------------------------
-        # 1. Get thetas of selected documents
-        # 2. Parse thetas in Q1
-        # 3. Execute Q4
-        # ================================================================
-        self.Q5 = {
-            'q': "{{!vp f=doctpc_{} vector=\"{}\"}}",
-            'fl': "id,score",
+            'q': "date:[{}-01-01T00:00:00Z TO {}-12-31T23:59:59Z]",
             'start': '{}',
             'rows': '{}'
         }
 
         # ================================================================
-        # # Q6: getMetadataDocById
+        # # Q5: getDocsByContinent
         # ################################################################
-        # # Get metadata of a selected document in a corpus collection
-        # ---------------------------------------------------------------
-        # Previous steps:
-        # ---------------------------------------------------------------
-        # 1. Get metadata fields of that corpus collection with Q2
-        # 2. Parse metadata in Q6
-        # 3. Execute Q6
+        # # Get collection filter by continent.
+        # # They are customize below.
+        # ================================================================
+
+        # ================================================================
+        # # Q6: getDocsByCity
+        # ################################################################
+        # # Get collection filter by affiliation city
         # ================================================================
         self.Q6 = {
-            'q': 'id:{}',
-            'fl': '{}'
+            'q': 'affiliation_city:\"{}\"',
+            'start': '{}',
+            'rows': '{}'
         }
 
         # ================================================================
-        # # Q7: getDocsWithString
+        # # Q7: getDocsByInstitution
         # ################################################################
-        # # Given a corpus collection, it retrieves the ids of the documents whose title contains such a string
-        # http://localhost:8983/solr/#/{collection}/query?q=title:{string}&q.op=OR&indent=true&useParams=
+        # # Get collection filter by affiliation name
         # ================================================================
         self.Q7 = {
-            'q': '{}:{}',
-            'fl': 'id',
+            'q': 'affilname:\"{}\"',
             'start': '{}',
             'rows': '{}'
         }
@@ -165,31 +141,22 @@ class Queries(object):
         # model
         # ================================================================
         self.Q12 = {
-            'q': "{{!vp f=betas vector=\"{}\"}}",
-            'fl': "id,score",
+            'q': "citedby_count:[{} TO {}]",
             'start': '{}',
             'rows': '{}'
         }
 
         # ================================================================
-        # # Q13: getPairsOfDocsWithHighSim
+        # # Q13: getDocsByFundSponsor
         # ################################################################
-        # # Get pairs of documents with a semantic similarity larger than a threshold
+        # # Get collection filter by funding sponsor
         # ================================================================
         self.Q13 = {
-            'q': "{{!vs f=sim_{} vector=\"{},{}\"}} & date:[{}-01-01T00:00:00Z TO {}-12-31T23:59:59Z]",
-            'fl': "id, sim_{}, score",
+            'q': 'fund_sponsor:\"{}\"',
             'start': '{}',
             'rows': '{}'
         }
 
-        # ================================================================
-        # # Q14: getDocsSimilarToFreeText
-        # ################################################################
-        # # Get documents that are semantically similar to a free text
-        # according to a given model
-        # ================================================================
-        self.Q14 = self.Q5
 
         # ================================================================
         # # Q15: getLemmasDocById  ##################################################################
@@ -303,21 +270,15 @@ class Queries(object):
         return self.Q3
 
     def customize_Q4(self,
-                     model_name: str,
-                     topic: str,
-                     threshold: str,
+                     year: str,
                      start: str,
                      rows: str) -> dict:
-        """Customizes query Q4 'getDocsWithThetasLargerThanThr'
+        """Customizes query Q4 'getDocsByYear'
 
         Parameters
         ----------
-        model_name: str
-            Name of the topic model whose topic distribution is to be retrieved.
-        topic: str
-            Topic number.
-        threshold: str
-            Threshold value.
+        year: str
+            Publication year to filter by
         start: str
             Start value.
         rows: str
@@ -330,25 +291,22 @@ class Queries(object):
         """
 
         custom_q4 = {
-            'q': self.Q4['q'].format(model_name, str(threshold), str(topic)),
+            'q': self.Q4['q'].format(year,year),
             'start': self.Q4['start'].format(start),
             'rows': self.Q4['rows'].format(rows),
         }
         return custom_q4
 
     def customize_Q5(self,
-                     model_name: str,
-                     thetas: str,
+                     continent: str,
                      start: str,
                      rows: str) -> dict:
-        """Customizes query Q5 'getDocsWithHighSimWithDocByid'
+        """Customizes query Q5 'getDocsByContinent'
 
         Parameters
         ----------
-        model_name: str
-            Name of the topic model whose topic distribution is to be retrieved.
-        thetas: str
-            Topic distribution of the selected document.
+        continent: str
+            Continent by which to filter the document collection
         start: str
             Start value.
         rows: str
@@ -359,27 +317,66 @@ class Queries(object):
         custom_q5: dict
             Customized query Q5.
         """
-
-        custom_q5 = {
-            'q': self.Q5['q'].format(model_name, thetas),
-            'fl': self.Q5['fl'].format(model_name),
-            'start': self.Q5['start'].format(start),
-            'rows': self.Q5['rows'].format(rows),
-        }
-        return custom_q5
+        if continent == "europe":
+            Q5_europe = {
+                'q': 'affiliation_country:(Italy OR \"United Kingdom\" OR Germany OR France OR Netherlands OR Portugal OR Switzerland OR Belgium OR Sweden OR Denmark OR Poland OR \"Russian Federation\" OR Austria OR Greece OR Norway OR Finland OR \"Czech Republic\" OR Ireland OR Slovenia OR Croatia OR Serbia OR Estonia OR Lithuania OR Cyprus OR Hungary OR Slovakia OR Bulgaria OR Latvia OR Romania OR Malta OR Luxembourg OR Iceland OR Belarus OR Ukraine OR \"Bosnia and Herzegovina\" OR Moldova OR Albania OR \"North Macedonia\")',
+                'start': start,
+                'rows': rows,
+            }
+            return Q5_europe
+        elif continent == "asia":
+            Q5_asia = {
+                'q': 'affiliation_country:(China OR Japan OR India OR \"South Korea\" OR Israel OR Iran OR Turkey OR \"Saudi Arabia\" OR \"United Arab Emirates\" OR Taiwan OR Pakistan OR Singapore OR \"Hong Kong\" OR Thailand OR Malaysia OR \"Viet Nam\" OR Lebanon OR Qatar OR Bangladesh OR Armenia OR Jordan OR Georgia OR Philippines OR Kazakhstan OR Iraq OR Afghanistan OR Kyrgyzstan OR Tajikistan OR \"Brunei Darussalam\" OR Myanmar OR Laos OR Indonesia OR Cambodia OR Singapore OR Yemen OR Oman OR \"Syrian Arab Republic\" OR Azerbaijan OR Turkmenistan OR Uzbekistan OR \"Sri Lanka\" OR Mongolia OR Nepal OR Bhutan OR Kuwait OR Cyprus)',
+                'start': start,
+                'rows': rows,
+            }
+            return Q5_asia
+        elif continent == "africa":
+            Q5_africa = {
+                'q': 'affiliation_country:(\"South Africa\" OR Morocco OR Egypt OR Nigeria OR Algeria OR Tunisia OR Ethiopia OR Kenya OR Ghana OR Namibia OR Sudan OR \"Libyan Arab Jamahiriya\" OR Mauritania OR Mozambique OR Zimbabwe OR Mali OR Angola OR Gambia OR Togo OR Senegal OR Cameroon OR Mauritius OR Congo OR Zambia OR Uganda OR Botswana OR Gabon OR Rwanda OR Madagascar OR Niger OR Malawi OR \"Burkina Faso\" OR \"Cape Verde\" OR Guinea OR \"Cote d\'Ivoire\" OR Benin OR Chad OR \"Guinea-Bissau\" OR \"Sierra Leone\" OR Zimbabwe OR Burundi OR Liberia OR \"Central African Republic\" OR Djibouti OR \"Equatorial Guinea\" OR \"Democratic Republic Congo\" OR Tanzania)',
+                'start': start,
+                'rows': rows,
+            }
+            return Q5_africa
+        elif continent == "north america":
+            Q5_north_america = {
+                'q': 'affiliation_country:(\"United States\" OR Canada OR Mexico OR Guatemala OR Haiti OR Honduras OR \"El Salvador\" OR Nicaragua OR \"Costa Rica\" OR Panama OR Cuba OR \"Dominican Republic\" OR Jamaica OR \"Puerto Rico\" OR Bahamas OR Greenland OR \"Trinidad and Tobago\")',
+                'start': start,
+                'rows': rows,
+            }
+            return Q5_north_america
+        elif continent == "south america":
+            Q5_south_america = {
+                'q': 'affilcountry:(Brazil OR Chile OR Argentina OR Colombia OR Ecuador OR Peru OR Venezuela OR Uruguay OR Paraguay OR Bolivia OR Guyana OR Suriname OR \"Falkland Islands (Malvinas)\")',
+                'start': start,
+                'rows': rows,
+            }            
+            return Q5_south_america
+        else:
+            Q5_world = {
+                'q': "*:*",
+                'start': self.Q6['start'].format(start),
+                'rows': self.Q6['rows'].format(rows),
+            }
+            return Q5_world
+        
 
     def customize_Q6(self,
-                     id: str,
-                     meta_fields: str) -> dict:
-        """Customizes query Q6 'getMetadataDocById'
+                     city: str,
+                     start: str,
+                     rows: str) -> dict:
+        """Customizes query Q6 'getDocsByCity'
 
 
         Parameters
         ----------
-        id: str
-            Document id.
-        meta_fields: str
-            Metadata fields of the corpus collection to be retrieved.
+        city: str
+            City by which to filter the document collection.
+        start: str
+            Start value.
+        rows: str
+            Number of rows to retrieve.
+
 
         Returns
         -------
@@ -388,25 +385,22 @@ class Queries(object):
         """
 
         custom_q6 = {
-            'q': self.Q6['q'].format(id),
-            'fl': self.Q6['fl'].format(meta_fields)
+            'q': self.Q6['q'].format(city),
+            'start': self.Q6['start'].format(start),
+            'rows': self.Q6['rows'].format(rows),
         }
-
         return custom_q6
 
     def customize_Q7(self,
-                     title_field: str,
-                     string: str,
+                     institution: str,
                      start: str,
                      rows: str) -> dict:
-        """Customizes query Q7 'getDocsWithString'
+        """Customizes query Q7 'getDocsByInstitution'
 
         Parameters
         ----------
-        title_field: str
-            Title field of the corpus collection.
-        string: str
-            String to be searched in the title field.
+        institution: str
+            Institution by which to filter the document collection.
         start: str
             Start value.
         rows: str
@@ -419,12 +413,10 @@ class Queries(object):
         """
 
         custom_q7 = {
-            'q': self.Q7['q'].format(title_field, string),
-            'fl': self.Q7['fl'],
+            'q': self.Q7['q'].format(institution),
             'start': self.Q7['start'].format(start),
-            'rows': self.Q7['rows'].format(rows)
+            'rows': self.Q7['rows'].format(rows),
         }
-
         return custom_q7
 
     def customize_Q8(self,
@@ -536,15 +528,18 @@ class Queries(object):
         return custom_q11
 
     def customize_Q12(self,
-                      betas: str,
+                      lower_limit: str,
+                      upper_limit: str,
                       start: str,
                       rows: str) -> dict:
         """Customizes query Q12 'getMostCorrelatedTopics'
 
         Parameters
         ----------
-        betas: str
-            Word distribution of the selected topic.
+        lower_limit: str
+            Lower limit to filter by number of citations
+        upper_limit: str
+            Upper limit to filter by number of citations
         start: str
             Start value.
         rows: str
@@ -552,38 +547,28 @@ class Queries(object):
 
         Returns
         -------
-        custom_q11: dict
-            Customized query q11.
+        custom_q12: dict
+            Customized query q12.
         """
 
         custom_q12 = {
-            'q': self.Q12['q'].format(betas),
-            'fl': self.Q12['fl'],
+            'q': self.Q12['q'].format(lower_limit, upper_limit),
             'start': self.Q12['start'].format(start),
             'rows': self.Q12['rows'].format(rows),
         }
         return custom_q12
 
     def customize_Q13(self,
-                      model_name: str,
-                      lower_limit: str,
-                      upper_limit: str,
-                      year: str,
+                      fund_sponsor: str,
                       start: str,
                       rows: str) -> dict:
         
-        """Customizes query Q13 'getPairsOfDocsWithHighSim'
+        """Customizes query Q13 'getDocsByFundSponsor'
 
         Parameters
         ----------
-        model_name: str
-            Name of the topic model where semantic similarity is evaluated.
-        lower_limit: str
-            Lower percentage of semantic similarity to return pairs of documents.
-        upper_limit: str
-            Upper percentage of semantic similarity to return pairs of documents.
-        year: str
-            Year to filter documents.
+        fund_sponsor: str
+            Funding Sponsor by which to filter the document collection
         start: str
             Start value.
         rows: str
@@ -596,45 +581,12 @@ class Queries(object):
         """
 
         custom_q13 = {
-            'q': self.Q13['q'].format(model_name, lower_limit, upper_limit, year, year),
-            'fl': self.Q13['fl'].format(model_name),
+            'q': self.Q13['q'].format(fund_sponsor),
             'start': self.Q13['start'].format(start),
             'rows': self.Q13['rows'].format(rows),
         }
         
         return custom_q13
-
-    def customize_Q14(self,
-                      model_name: str,
-                      thetas: str,
-                      start: str,
-                      rows: str) -> dict:
-        """Customizes query Q14 'getDocsSimilarToFreeText'
-
-        Parameters
-        ----------
-        model_name: str
-            Name of the topic model whose topic distribution is to be retrieved.
-        thetas: str
-            Topic distribution of the user's free text.
-        start: str
-            Start value.
-        rows: str
-            Number of rows to retrieve.
-
-        Returns
-        -------
-        custom_q14: dict
-            Customized query Q14.
-        """
-
-        custom_q14 = {
-            'q': self.Q14['q'].format(model_name, thetas),
-            'fl': self.Q14['fl'].format(model_name),
-            'start': self.Q14['start'].format(start),
-            'rows': self.Q14['rows'].format(rows),
-        }
-        return custom_q14
 
     def customize_Q15(self,
                       id: str) -> dict:

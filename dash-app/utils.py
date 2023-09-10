@@ -36,11 +36,11 @@ def range_label(range):
     if range.left == 0 and range.right == 5:
         return '< 5'
     elif range.left == 5 and range.right == 10:
-        return '5 - 10'
+        return '5 - 9'
     elif range.left == 10 and range.right == 50:
-        return '10 - 50'
+        return '10 - 49'
     else:
-        return '> 50'
+        return '50 >'
     
 # Filter dataframe by continent (MAP)
 def filter_dataframe_by_continent(df, continent):
@@ -53,7 +53,7 @@ def filter_dataframe_by_continent(df, continent):
                         'Estonia', 'Lithuania', 'Cyprus', 'Hungary', 'Slovakia', 'Bulgaria',
                         'Latvia', 'Romania', 'Malta', 'Luxembourg', 'Iceland', 'Belarus',
                         'Ukraine', 'Bosnia and Herzegovina', 'Moldova', 'Albania', 'North Macedonia']
-
+    
     north_america_countries = ['United States', 'Canada', 'Mexico', 'Guatemala', 'Haiti', 'Honduras', 
                                'El Salvador','Nicaragua', 'Costa Rica', 'Panama', 'Cuba', 'Dominican Republic',
                                'Jamaica', 'Puerto Rico', 'Bahamas', 'Greenland', 'Trinidad and Tobago']
@@ -104,6 +104,27 @@ def determine_text_position(value, scale_mid):
         return 'inside'
     else:
         return 'outside'
+    
+# Función para dividir y eliminar duplicados
+def split_and_remove_duplicates_cities(row):
+    affiliation_city = row['affiliation_city']
+    if affiliation_city is not None:
+        cities = affiliation_city.split(";")
+        unique_cities = set(cities)  # Elimina duplicados manteniendo el orden original
+        return pd.Series(list(unique_cities), dtype=str)
+    else:
+        return pd.Series(dtype=str)  # Devuelve una serie vacía si affiliation_city es None
+
+# Función para dividir y eliminar duplicados
+def split_and_remove_duplicates_country(row):
+    affiliation_country = row['affiliation_country']
+    if affiliation_country is not None:
+        countries = affiliation_country.split(";")
+        unique_countries = set(countries)  # Elimina duplicados manteniendo el orden original
+        return pd.Series(list(unique_countries), dtype=str)
+    else:
+        return pd.Series(dtype=str)  # Devuelve una serie vacía si affiliation_city es None
+
     
 def load_figures(df: pd.DataFrame):
 

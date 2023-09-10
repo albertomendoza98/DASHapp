@@ -95,14 +95,16 @@ class EWBRestapiClient(object):
             resp = requests.get(
                 url=url,
                 timeout=timeout,
-                **params
+                **params,
+                verify=False
             )
             pass
         elif type == "post":
             resp = requests.post(
                 url=url,
                 timeout=timeout,
-                **params
+                **params,
+                verify=False
             )
         else:
             self.logger.error(f"-- -- Invalid type {type}")

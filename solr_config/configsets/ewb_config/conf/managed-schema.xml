@@ -141,9 +141,9 @@
   <field name="subtypeDescription" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="creator" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="afid" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affilname" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affiliation_city" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="affiliation_country" type="string" indexed="true" stored="true" multiValued="false" />
+  <field name="affilname" type="semicolonDelimited" indexed="true" stored="true" multiValued="false" />
+  <field name="affiliation_city" type="semicolonDelimited" indexed="true" stored="true" multiValued="false" />
+  <field name="affiliation_country" type="semicolonDelimited" indexed="true" stored="true" multiValued="false" />
   <field name="author_count" type="pint" indexed="true" stored="true" multiValued="false" />  
   <field name="author_names" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="author_ids" type="string" indexed="true" stored="true" multiValued="false" />
@@ -160,6 +160,7 @@
   <field name="freetoread" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="freetoreadLabel" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="fund_no" type="string" indexed="true" stored="true" multiValued="false" />
+  <field name="fund_sponsor" type="semicolonDelimited" indexed="true" stored="true" multiValued="false" />
   <field name="abstract" type="text_general" indexed="true" stored="true" multiValued="false" />
   
   <!-- Model fields  -->
@@ -391,6 +392,14 @@
 
   <field name="betas" type="VectorField" indexed="true" termOffsets="true" stored="true"
     termPositions="true" termVectors="true" multiValued="false" />
+
+
+  <fieldType name="semicolonDelimited" class="solr.TextField">
+    <analyzer type="query">
+      <tokenizer class="solr.PatternTokenizerFactory" pattern=";" />
+    </analyzer>
+  </fieldType>
+
 
   <!-- <fieldType name="text_tfdl" class="solr.TextField" omitPositions="true" >
       <analyzer>
