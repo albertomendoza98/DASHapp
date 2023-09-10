@@ -135,3 +135,5 @@ data
 
 # vscode
 .vscode
+# .DS_Store files created by MacOS
+.DS_Store
