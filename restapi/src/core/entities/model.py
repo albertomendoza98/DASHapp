@@ -71,7 +71,7 @@ class Model(object):
 
         # Get model information from TMmodel
         self.tmmodel = TMmodel(self.path_to_model.joinpath("TMmodel"))
-        self.alphas, self.betas, self.thetas, self.vocab, self.sims, self.coords = self.tmmodel.get_model_info_for_vis()
+        self.alphas, self.betas, self.thetas, self.vocab, self.coords = self.tmmodel.get_model_info_for_vis()
 
         return
 
