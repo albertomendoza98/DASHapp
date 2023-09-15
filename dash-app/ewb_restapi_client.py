@@ -128,6 +128,7 @@ class EWBRestapiClient(object):
         """
 
         open_access = '1' if selected_category == 'Open Access' else '0'
+        self.logger.info(f"-- -- Open Access label is: {selected_category}")
 
         headers_ = {'Accept': 'application/json'}
 

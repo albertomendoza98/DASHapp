@@ -86,28 +86,24 @@ class Queries(object):
         # # Q8: getTopicsLabels
         # ################################################################
         # # Get the label associated to each of the topics in a given model
-        # http://localhost:8983/solr/{model}/select?fl=id%2C%20tpc_labels&indent=true&q.op=OR&q=*%3A*&useParams=
         # ================================================================
         self.Q8 = {
             'q': '*:*',
-            'fl': 'id,tpc_labels',
+            'fl': 'tpc_labels',
             'start': '{}',
             'rows': '{}'
         }
 
         # ================================================================
-        # # Q9: getTopicTopDocs
+        # # Q9: getIdOfTopicLabel
         # ################################################################
-        # # Get the top documents for a given topic in a model collection
-        # http://localhost:8983/solr/cordis/select?indent=true&q.op=OR&q=%7B!term%20f%3D{model}%7Dt{topic_id}&useParams=
-        # http://localhost:8983/solr/#/{corpus_collection}/query?q=*:*&q.op=OR&indent=true&fl=doctpc_{model_name},%20nwords_per_doc&sort=payload(doctpc_{model_name},t{topic_id})%20desc,%20nwords_per_doc%20desc&useParams=
+        # # Get the Id of a given topic label
         # ================================================================
         self.Q9 = {
-            'q': '*:*',
-            'sort': 'payload(doctpc_{},t{}) desc, nwords_per_doc desc',
-            'fl': 'doctpc_{}, nwords_per_doc, id',
-            'start': '{}',
-            'rows': '{}'
+            'q': 'tpc_labels:\"{}\"',
+            'fl': 'id',
+            'start': '0',
+            'rows': '1'
         }
 
         # ================================================================
@@ -166,46 +162,6 @@ class Queries(object):
         self.Q15 = {
             'q': 'id:{}',
             'fl': 'all_lemmas',
-        }
-
-        # ================================================================
-        # # Q16: getThetasAndDateAllDocs  ##################################################################
-        # # Get the document-topic representation and date of all documents in a corpus collection and selected model. Note that for documents with no document-topic representation, only the date field is returned
-        # http://localhost:8983/solr/{col}/query?q=*:*&q.op=OR&indent=true&fl=doctpc_{model},date&rows=1000&useParams=
-        # ================================================================
-        self.Q16 = {
-            'q': '*:*',
-            'fl': 'id,date,doctpc_{}',
-            'start': '{}',
-            'rows': '{}'
-        }
-
-        # ================================================================
-        # # Q17: getBetasByWordAndTopicId
-        # ################################################################
-        # # Get the topic-word distribution of a given word in a given topic
-        # http://localhost:8983/solr/#/{model}/query?q=id:t{topic_id}&q.op=OR&indent=true&fl=payload(betas,{word})&useParams=
-        # # Response example:
-        # # # {
-        # # #"responseHeader":{
-        # # #    "zkConnected":true,
-        # # #    "status":0,
-        # # #    "QTime":3,
-        # # #    "params":{
-        # # #    "q":"id:t0",
-        # # #    "indent":"true",
-        # # #    "fl":"payload(betas, researchers)",
-        # # #    "q.op":"OR",
-        # # #    "useParams":"",
-        # # #    "_":"1685958683375"}},
-        # # #"response":{"numFound":1,"start":0,"numFoundExact":true,"docs":[
-        # # #    {
-        # # #        "payload(betas, researchers)":7.0}]
-        # # #}}
-        # ================================================================
-        self.Q17 = {
-            'q': 'id:t{}',
-            'fl': 'payload(betas,{})',
         }
 
     def customize_Q1(self,
@@ -447,22 +403,13 @@ class Queries(object):
         return custom_q8
 
     def customize_Q9(self,
-                     model_name: str,
-                     topic_id: str,
-                     start: str,
-                     rows: str) -> dict:
-        """Customizes query Q9 'getDocsByTopic'
+                     topic_label: str) -> dict:
+        """Customizes query Q9 'getIdOfTopicLabel'
 
         Parameters
         ----------
-        model_name: str
-            Name of the topic model whose topic distribution is going to be used for retreving the top documents for the topic given by 'topic'.
-        topic_id: str
-            Topic number.
-        start: str
-            Start value.
-        rows: str
-            Number of rows to retrieve.
+        topic_label: str
+            Topic label.
 
         Returns
         -------
@@ -471,11 +418,7 @@ class Queries(object):
         """
 
         custom_q9 = {
-            'q': self.Q9['q'],
-            'sort': self.Q9['sort'].format(model_name, topic_id),
-            'fl': self.Q9['fl'].format(model_name),
-            'start': self.Q9['start'].format(start),
-            'rows': self.Q9['rows'].format(rows),
+            'q': self.Q9['q'].format(topic_label),
         }
         
         return custom_q9
@@ -608,57 +551,3 @@ class Queries(object):
             'fl': self.Q15['fl'],
         }
         return custom_q15
-
-    def customize_Q16(self,
-                      model_name: str,
-                      start: str,
-                      rows: str) -> dict:
-        """Customizes query Q16 'getThetasAndDateAllDocs'.
-
-        Parameters
-        ----------
-        model_name: str
-            Name of the topic model whose topic distribution is to be retrieved.
-        start: str
-            Start value.
-        rows: str
-            Number of rows to retrieve.
-
-        Returns
-        -------
-        custom_q16: dict
-            Customized query Q1.
-        """
-
-        custom_q16 = {
-            'q': self.Q16['q'],
-            'fl': self.Q16['fl'].format(model_name),
-            'start': self.Q16['start'].format(start),
-            'rows': self.Q16['rows'].format(rows),
-        }
-        return custom_q16
-
-    def customize_Q17(self,
-                      topic_id: str,
-                      word: str) -> dict:
-        """Customizes query Q17 'getBetasByWordAndTopicId'.
-
-        Parameters
-        ----------
-        topic_id: str
-            Topic id.
-        word: str
-            Word.
-
-        Returns
-        -------
-        custom_q17: dict
-            Customized query Q17.
-        """
-
-        custom_q17 = {
-            'q': self.Q17['q'].format(topic_id),
-            'fl': self.Q17['fl'].format(word)
-        }
-
-        return custom_q17

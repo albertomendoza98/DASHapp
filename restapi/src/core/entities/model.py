@@ -95,7 +95,12 @@ class Model(object):
         df.reset_index(drop=True)
         df["id"] = [f"t{i}" for i in range(len(df))]
         # TODO: This should be removed once the topic model makes it on its own
-        df["tpc_labels"] = [f"Topic {i}" for i in range(len(df))]
+        tpc_labels_path =self.path_to_model.joinpath("TMmodel").joinpath("tpc_labels.txt")
+        with open(tpc_labels_path, 'r') as file:
+            labels = [line.strip() for line in file]
+        
+        df['tpc_labels'] = labels
+        #df["tpc_labels"] = [f"Topic {i}" for i in range(len(df))]
         cols = df.columns.tolist()
         cols = cols[-1:] + cols[:-1]
         df = df[cols]
@@ -275,10 +280,10 @@ class Model(object):
 
             #sim_rpr = get_doc_by_doc_sims(self.sims, ids_corpus)
 
-            with open(self.path_to_model.joinpath("TMmodel").joinpath('distances.txt'), 'r') as f:
-                sim_rpr = [line.strip() for line in f]
-            self._logger.info(
-                "Thetas and sims attained. Creating dataframe...")
+            #with open(self.path_to_model.joinpath("TMmodel").joinpath('distances.txt'), 'r') as f:
+                #sim_rpr = [line.strip() for line in f]
+            #self._logger.info(
+                #"Thetas and sims attained. Creating dataframe...")
             # Save the information in a dataframe
             df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr, sim_rpr)),
                               columns=['id', model_key, sim_model_key])

@@ -147,7 +147,7 @@
   <field name="author_count" type="pint" indexed="true" stored="true" multiValued="false" />  
   <field name="author_names" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="author_ids" type="string" indexed="true" stored="true" multiValued="false" />
-  <field name="author_ifids" type="string" indexed="true" stored="true" multiValued="false" />
+  <field name="author_afids" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="coverDisplayDate" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="publicationName" type="string" indexed="true" stored="true" multiValued="false" />
   <field name="source_id" type="string" indexed="true" stored="true" multiValued="false" />
@@ -399,7 +399,6 @@
       <tokenizer class="solr.PatternTokenizerFactory" pattern=";" />
     </analyzer>
   </fieldType>
-
 
   <!-- <fieldType name="text_tfdl" class="solr.TextField" omitPositions="true" >
       <analyzer>

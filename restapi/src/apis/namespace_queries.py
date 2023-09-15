@@ -226,22 +226,18 @@ class getTopicsLabels(Resource):
                         rows=rows)
 
 
-@api.route('/getTopicTopDocs/')
-class getTopicTopDocs(Resource):
+@api.route('/getIdOfTopicLabel/')
+class getIdOfTopicLabel(Resource):
     @api.doc(parser=q9_parser)
     def get(self):
         args = q9_parser.parse_args()
         corpus_collection = args['corpus_collection']
-        model_name = args['model_name']
-        topic_id = args['topic_id']
-        start = args['start']
-        rows = args['rows']
+        model_col = args['model_name']
+        topic_label = args['topic_label']
 
         return sc.do_Q9(corpus_col=corpus_collection,
-                        model_name=model_name,
-                        topic_id=topic_id,
-                        start=start,
-                        rows=rows)
+                        model_col=model_col,
+                        topic_label=topic_label)
 
 
 @api.route('/getModelInfo/')
@@ -305,33 +301,3 @@ class getLemmasDocById(Resource):
 
         return sc.do_Q15(corpus_col=corpus_collection,
                          doc_id=doc_id)
-
-
-@api.route('/getThetasAndDateAllDocs/')
-class getThetasAndDateAllDocs(Resource):
-    @api.doc(parser=q16_parser)
-    def get(self):
-        args = q16_parser.parse_args()
-        corpus_collection = args['corpus_collection']
-        model_name = args['model_name']
-        start = args['start']
-        rows = args['rows']
-
-        return sc.do_Q16(corpus_col=corpus_collection,
-                         model_name=model_name,
-                         start=start,
-                         rows=rows)
-
-
-@api.route('/getBetasByWordAndTopicId/')
-class getBetasByWordAndTopicId(Resource):
-    @api.doc(parser=q17_parser)
-    def get(self):
-        args = q17_parser.parse_args()
-        model_name = args['model_name']
-        tpc_id = args['tpc_id']
-        word = args['word']
-
-        return sc.do_Q17(model_name=model_name,
-                         tpc_id=tpc_id,
-                         word=word)

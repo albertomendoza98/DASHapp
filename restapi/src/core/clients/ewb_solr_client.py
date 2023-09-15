@@ -604,7 +604,7 @@ class EWBSolrClient(SolrClient):
         start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
         # 3. Execute query
-        q1 = self.querier.customize_Q1(open_access=open_access, start=start, rows=rows)
+        q1 = self.querier.customize_Q1(open_access=open_access, start=start, rows=10)
         params = {k: v for k, v in q1.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -924,25 +924,16 @@ class EWBSolrClient(SolrClient):
         return results.docs, sc
 
     def do_Q9(self,
-              corpus_col: str,
-              model_name: str,
-              topic_id: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
+              model_col: str,
+              topic_label: str) -> Union[dict, int]:
         """Executes query Q9.
 
         Parameters
         ----------
-        corpus_col: str
-            Name of the corpus collection on which the query will be carried out
         model_name: str
             Name of the model collection on which the search will be based
-        topic_id: str
-            ID of the topic whose top-documents will be retrieved
-        start: str
-            Index of the first document to be retrieved
-        rows: str
-            Number of documents to be retrieved
+        topic_label: str
+            Label of the topic whose id will be retrieved
 
         Returns
         -------
@@ -952,41 +943,25 @@ class EWBSolrClient(SolrClient):
             The status code of the response.
         """
 
-        # 0. Convert corpus and model names to lowercase
-        corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
+        # 0. Convert model name to lowercase
+        model_col = model_col.lower()
 
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
+        # 1. Check that model_col is indeed a model collection
+        if not self.check_is_model(model_col):
             return
-
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-
-        # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
 
         # 5. Execute query
-        q9 = self.querier.customize_Q9(
-            model_name=model_name,
-            topic_id=topic_id,
-            start=start,
-            rows=rows)
+        q9 = self.querier.customize_Q9(topic_label=topic_label)
+        
         params = {k: v for k, v in q9.items() if k != 'q'}
 
         sc, results = self.execute_query(
-            q=q9['q'], col_name=corpus_col, **params)
+            q=q9['q'], col_name=model_col, **params)
 
         if sc != 200:
             self.logger.error(
                 f"-- -- Error executing query Q9. Aborting operation...")
             return
-        
-        # 6. Return a dictionary with names more understandable to the end user
-        for dict in results.docs:
-            dict["thetas"] = dict.pop('doctpc_' + model_name)
-            dict["num_words_per_doc"] = dict.pop("nwords_per_doc")
         
         return results.docs, sc
 
@@ -1211,98 +1186,3 @@ class EWBSolrClient(SolrClient):
             return
 
         return {'lemmas': results.docs[0]['all_lemmas']}, sc
-
-    def do_Q16(self,
-               corpus_col: str,
-               model_name: str,
-               start: str,
-               rows: str) -> Union[dict, int]:
-        """Executes query Q16.
-
-        Parameters
-        ----------
-        corpus_col : str
-            Name of the corpus collection.
-        model_name : str
-            Name of the model to be used for the retrieval of the document-topic distributions
-        start: str
-            Offset into the responses at which Solr should begin displaying content
-        rows: str
-            How many rows of responses are displayed at a time
-
-        Returns
-        -------
-        resp: dict
-            JSON object with the results of the query.
-        sc : int
-            The status code of the response.  
-        """
-
-        # 0. Convert corpus and model names to lowercase
-        corpus_col = corpus_col.lower()
-        model_name = model_name.lower()
-
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
-            return
-
-        # 2. Check that corpus_col has the model_name field
-        if not self.check_corpus_has_model(corpus_col, model_name):
-            return
-        
-        # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, corpus_col)
-
-        # 4. Execute query
-        q16 = self.querier.customize_Q16(model_name=model_name,
-                                         start=start, rows=rows)
-        self.logger.info(
-                f"-- -- Query Q16: {q16}")
-        params = {k: v for k, v in q16.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q16['q'], col_name=corpus_col, **params)
-
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q16. Aborting operation...")
-            return
-
-        # 4. Add -1 if thetas field is not found for any of the documents (it could happen that a document in a collection has not thetas representation since it was not keeped within the corpus used for training the model)
-        def add_thetas(json_list):
-            for item in json_list:
-                if 'doctpc_' + model_name not in item:
-                    item['doctpc_' + model_name] = -1
-                yield item
-        processed_json_list = list(add_thetas(results.docs))
-
-        return processed_json_list, sc
-
-    def do_Q17(self, 
-               model_name: str,
-               tpc_id : str,
-               word: str) -> Union[dict, int]:
-        
-        # 0. Convert model name to lowercase
-        model_name = model_name.lower()
-
-        # 1. Check that model_col is indeed a model collection
-        if not self.check_is_model(model_name):
-            return
-        
-        # 2. Execute query
-        q17 = self.querier.customize_Q17(topic_id=tpc_id, word=word)
-        params = {k: v for k, v in q17.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q17['q'], col_name=model_name, **params)
-
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q17. Aborting operation...")
-            return
-        
-        key = "payload(betas," + word + ")"
-        betas = int(results.docs[0][key])
-
-        return {'betas': betas}, sc

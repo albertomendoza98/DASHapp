@@ -87,7 +87,7 @@ fig_openaccess.update_layout(title_x=0.5)
 
 # ------------ CITED-BY COUNT PIE CHART ------------ #
 # Define the ranges
-rangos = [0, 5, 10, 50, df['citedby_count'].max()]
+rangos = [0, 5, 10, 25, df['citedby_count'].max()]
 # Discretize the 'citedby_count' column
 df['citedby_range'] = pd.cut(df['citedby_count'], bins=rangos, right=False)
 # Count how many values fall into each range
@@ -126,6 +126,14 @@ country_count = new_df.stack().value_counts()
 
 df_country_count = pd.DataFrame({'country': country_count.index, 'count': country_count.values})
 df_country_count.drop(df_country_count[df_country_count['country'] == 'Spain'].index, inplace = True)
+
+# PARA HACER EL DROPDOWN MENU DE LOS TÓPICOS
+# Supongamos que tienes un DataFrame llamado 'df' con la columna 'etiquetas'
+#df = llamada api
+#etiquetas = df['etiquetas']
+
+# Convierte las etiquetas en una lista de diccionarios en el formato deseado
+#lista_etiquetas = [{'label': etiqueta, 'value': etiqueta} for etiqueta in etiquetas]
 
 # Define the options for the Dropdown menu based on the valid 'scope' values
 continent_options = [
@@ -291,13 +299,13 @@ def update_data(openaccess_click):
         # Obtiene la etiqueta de la categoría seleccionada
         selected_category = openaccess_click['points'][0]['label']
         #api_resp = restapi.open_access(selected_category=selected_category)
-        api_resp = restapi.corpus_metadata()
+        api_resp = restapi.open_access(selected_category=selected_category)
         if api_resp.status_code != 200:
             logger.error(
                 f"-- -- Error extracting SCOPUS from Solr")
         else:
             updated_df = pd.DataFrame(api_resp.results)
-            logger.info("-- -- Data updated successfully")
+            logger.info(f"-- -- Data updated successfully{updated_df.columns}")
 
     #if citedby_click is not None:
         # Actualiza el DataFrame según la selección de citedby_click
@@ -309,7 +317,7 @@ def update_data(openaccess_click):
     # Asegúrate de que los gráficos utilicen 'updated_df' en lugar del DataFrame original 'df'
     # ------------ CITED-BY COUNT PIE CHART ------------ #
     # Define the ranges
-    rangos = [0, 5, 10, 50, updated_df['citedby_count'].max()]
+    rangos = [0, 5, 10, 25, updated_df['citedby_count'].max()]
     # Discretize the 'citedby_count' column
     updated_df['citedby_range'] = pd.cut(updated_df['citedby_count'], bins=rangos, right=False)
     # Count how many values fall into each range
@@ -322,7 +330,7 @@ def update_data(openaccess_click):
                         color_discrete_sequence=get_color_gradient(c7, c8, 4))
     # Personalize the labels directly in the graph
     updated_fig_citedby.update_traces(textposition='inside', textinfo='label', textfont_size=13.5, textfont_color='white', showlegend=False)
-    updated_fig_citedby.update_layout(title_x=0.5)
+    updated_fig_citedby.update_layout(title_x=0.5) 
 
     #updated_fig_map = px.choropleth(...
     #updated_fig_cities = px.bar(...

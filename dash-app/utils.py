@@ -37,10 +37,10 @@ def range_label(range):
         return '< 5'
     elif range.left == 5 and range.right == 10:
         return '5 - 9'
-    elif range.left == 10 and range.right == 50:
-        return '10 - 49'
+    elif range.left == 10 and range.right == 25:
+        return '10 - 24'
     else:
-        return '50 >'
+        return '25 >'
     
 # Filter dataframe by continent (MAP)
 def filter_dataframe_by_continent(df, continent):
