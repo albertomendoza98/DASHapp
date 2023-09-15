@@ -204,7 +204,7 @@ class Model(object):
         if tr_config["trainer"].lower() == "mallet":
             def process_line(line):
                 id_ = line.rsplit(' 0 ')[0].strip()
-                id_ = int(id_.strip('"').split('-').str[-1])
+                id_ = int(id_.strip('"').split('-')[-1])
                 return id_
             with open(self.path_to_model.joinpath("corpus.txt"), encoding="utf-8") as file:
                 ids_corpus = [process_line(line) for line in file]
