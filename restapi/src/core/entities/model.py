@@ -183,6 +183,8 @@ class Model(object):
         --------
         json_lst: list[dict]
             A list of dictionaries with thr document-topic proportions update.
+        corpus_name: str
+            Name of the corpus to which is linked the model.
         """
 
         # Read training configuration
@@ -195,9 +197,8 @@ class Model(object):
         self.corpus_name = tr_config["TrDtSet"].split(
             "/")[-1].split(".")[0].lower()
 
-        # Keys for dodument-topic proportions and similarity that will be used within the corpus collection
+        # Keys for dodument-topic proportions that will be used within the corpus collection
         model_key = 'doctpc_' + self.name
-        sim_model_key = 'sim_' + self.name
 
         # Get ids of documents kept in the tr corpus
         if tr_config["trainer"].lower() == "mallet":
@@ -248,45 +249,11 @@ class Model(object):
             doc_tpc_rpr = [get_doc_str_rpr(thetas_dense[row, :], 1000)
                            for row in range(len(thetas_dense))]
 
-            # Get similarities string representation
-            self._logger.info("Attaining sims rpr...")
-
-            def get_doc_by_doc_sims(W, ids_corpus) -> List[str]:
-                """
-                Calculates the similarity between each pair of documents in the corpus collection based on the document-topic distribution provided by the model being indexed.
-
-                Parameters
-                ----------
-                W: scipy.sparse.csr_matrix
-                    Sparse matrix with the similarities between each pair of documents in the corpus collection.
-                ids_corpus: List[str]
-                    List of ids of the documents in the corpus collection.
-
-                Returns:
-                --------
-                sims: List[str]
-                    List of string represenation of the top similarities between each pair of documents in the corpus collection.
-                """
-
-                # Get the non-zero elements indices
-                non_zero_indices = W.nonzero()
-
-                # Convert to a string
-                sim_str = \
-                    [' '.join([f"{ids_corpus[col]}|{W[row, col]}" for col in non_zero_indices[1]
-                              [non_zero_indices[0] == row]][1:]) for row in range(W.shape[0])]
-
-                return sim_str
-
-            #sim_rpr = get_doc_by_doc_sims(self.sims, ids_corpus)
-
-            #with open(self.path_to_model.joinpath("TMmodel").joinpath('distances.txt'), 'r') as f:
-                #sim_rpr = [line.strip() for line in f]
-            #self._logger.info(
-                #"Thetas and sims attained. Creating dataframe...")
+            self._logger.info(
+                "Thetas and sims attained. Creating dataframe...")
             # Save the information in a dataframe
-            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr, sim_rpr)),
-                              columns=['id', model_key, sim_model_key])
+            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr)),
+                  columns=['id', model_key])
             self._logger.info(
             f"Dataframe created. Printing it:{df.columns.tolist()}")
             # self._logger.info("Merging dataframes...")
@@ -296,8 +263,8 @@ class Model(object):
             doc_tpc_rpr = ["" for _ in range(len(ids_corpus))]
             sim_rpr = doc_tpc_rpr
             # Save the information in a dataframe
-            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr, sim_rpr)),
-                              columns=['id', model_key, sim_model_key])
+            df = pd.DataFrame(list(zip(ids_corpus, doc_tpc_rpr)),
+                  columns=['id', model_key])
 
         # Create json from dataframe
         json_str = df.to_json(orient='records')
@@ -309,15 +276,11 @@ class Model(object):
             for d in json_lst:
                 tpc_dict = {'set': d[model_key]}
                 d[model_key] = tpc_dict
-                sim_dict = {'set': d[sim_model_key]}
-                d[sim_model_key] = sim_dict
                 new_list.append(d)
         elif action == 'remove':
             for d in json_lst:
                 tpc_dict = {'set': []}
                 d[model_key] = tpc_dict
-                sim_dict = {'set': []}
-                d[sim_model_key] = sim_dict
                 new_list.append(d)
 
         return new_list, self.corpus_name
@@ -338,8 +301,7 @@ class Model(object):
         """
 
         json_lst = [{"id": id,
-                    "fields": {action: ['doctpc_' + self.name,
-                                        'sim_' + self.name]},
+                    "fields": {action: ['doctpc_' + self.name]},
                      "models": {action: self.name}
                      }]
 

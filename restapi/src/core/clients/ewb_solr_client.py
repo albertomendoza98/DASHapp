@@ -305,10 +305,6 @@ class EWBSolrClient(SolrClient):
         else:
             self.logger.info(
                 f"-- -- Collection {model_name} successfully created.")
-            
-        metadata = self.do_Q2("cordis")
-        self.logger.info(
-            f"-- -- Metadata of {self.corpus_col} before creating the model: {metadata}")
 
         # 3. Create Model object and extract info from the corpus to index
         model = Model(model_to_index)
@@ -322,10 +318,6 @@ class EWBSolrClient(SolrClient):
             return
         field_update = model.get_corpora_model_update(
             id=results.docs[0]["id"], action='add')
-        
-        metadata = self.do_Q2("cordis")
-        self.logger.info(
-            f"-- -- Metadata of {self.corpus_col} before adding the doc-tpc distribution: {metadata}")
 
         # 4. Add field for the doc-tpc distribution associated with the model being indexed in the document associated with the corpus
         self.logger.info(
@@ -334,27 +326,13 @@ class EWBSolrClient(SolrClient):
         self.logger.info(
             f"-- -- Indexing of model information of {model_name} info in {self.corpus_col} completed.")
         
-        metadata = self.do_Q2("cordis")
-        self.logger.info(
-            f"-- -- Metadata of {self.corpus_col} before modifying the schema: {metadata}")  
-
-        # 5. Modify schema in corpus collection to add field for the doc-tpc distribution and the similarities associated with the model being indexed
+        # 5. Modify schema in corpus collection to add field for the doc-tpc distribution with the model being indexed
         model_key = 'doctpc_' + model_name
-        sim_model_key = 'sim_' + model_name
         self.logger.info(
             f"-- -- Adding field {model_key} in {corpus_name} collection")
         _, err = self.add_field_to_schema(
             col_name=corpus_name, field_name=model_key, field_type='VectorField')
-        self.logger.info(
-            f"-- -- Adding field {sim_model_key} in {corpus_name} collection")
-        _, err = self.add_field_to_schema(
-            col_name=corpus_name, field_name=sim_model_key, field_type='VectorFloatField')
         
-
-        metadata = self.do_Q2("cordis")
-        self.logger.info(
-            f"-- -- Metadata of {self.corpus_col} before indexing doc-tpc information: {metadata}")  
-
         # 6. Index doc-tpc information in corpus collection
         self.logger.info(
             f"-- -- Indexing model information in {corpus_name} collection")
