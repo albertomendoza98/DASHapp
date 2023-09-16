@@ -419,6 +419,9 @@ class Queries(object):
 
         custom_q9 = {
             'q': self.Q9['q'].format(topic_label),
+            'fl': self.Q8['fl'],
+            'start': self.Q8['start'],
+            'rows': self.Q8['rows'],
         }
         
         return custom_q9
