@@ -69,15 +69,9 @@ q8_parser.add_argument(
 
 q9_parser = reqparse.RequestParser()
 q9_parser.add_argument(
-    'corpus_collection', help='Name of the corpus collection', required=True)
-q9_parser.add_argument(
     'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
 q9_parser.add_argument(
-    'topic_id', help="ID of the topic whose top documents according to 'model_name' are being searched", required=True)
-q9_parser.add_argument(
-    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
-q9_parser.add_argument(
-    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
+    'topic_label', help="Label of the topic whose id is retrieved", required=True)
 
 q10_parser = reqparse.RequestParser()
 q10_parser.add_argument(
@@ -231,12 +225,10 @@ class getIdOfTopicLabel(Resource):
     @api.doc(parser=q9_parser)
     def get(self):
         args = q9_parser.parse_args()
-        corpus_collection = args['corpus_collection']
         model_col = args['model_name']
         topic_label = args['topic_label']
 
-        return sc.do_Q9(corpus_col=corpus_collection,
-                        model_col=model_col,
+        return sc.do_Q9(model_col=model_col,
                         topic_label=topic_label)
 
 

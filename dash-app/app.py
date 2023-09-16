@@ -6,6 +6,8 @@ import logging
 import requests
 import plotly.express as px
 from dash.dependencies import Input, Output
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 # Import auxiliary functions from utils.py
 from utils import get_color_gradient, range_label, determine_text_position, filter_dataframe_by_continent, load_figures, split_and_remove_duplicates_country, split_and_remove_duplicates_cities
@@ -63,7 +65,7 @@ fund_sponsor_count = df['fund_sponsor'].str.split(";").explode('fund_sponsor').v
 # Create a new DataFrame with two columns: 'Funding Sponsor' and 'Count'
 df_fund_sponsor_count = pd.DataFrame({'fund_sponsor': fund_sponsor_count.index, 'num_projects': fund_sponsor_count.values})
 # Remove empty rows and select 
-df_fund_sponsor_count = df_fund_sponsor_count[df_fund_sponsor_count['fund_sponsor'] != ''].reset_index(drop=True).head(50).sort_values(by='num_projects', ascending=True)
+df_fund_sponsor_count = df_fund_sponsor_count[df_fund_sponsor_count['fund_sponsor'] != ''].reset_index(drop=True).head(25).sort_values(by='num_projects', ascending=True)
 # Create a bar chart with the top 25 cities
 fig_fund_sponsor = px.bar(df_fund_sponsor_count, x='num_projects', y='fund_sponsor', 
               orientation='h', 
@@ -165,6 +167,71 @@ fig_map.update_layout(
     title_x=0.5,
 )
 
+# ---------------------- TOPIC MAP ----------------------- #
+# Datos de ejemplo
+data = [
+    {
+        "ndocs_active": 50000,
+        "coords": [-0.0821034091, -0.191059237],
+        "tpc_labels": "Topic 0"
+    },
+    {
+        "ndocs_active": 30000,
+        "coords": [0.1287654321, 0.341059237],
+        "tpc_labels": "Topic 1"
+    },
+    {
+        "ndocs_active": 15000,
+        "coords": [-0.2123456789, 0.091059237],
+        "tpc_labels": "Topic 2"
+    },
+    {
+        "ndocs_active": 45000,
+        "coords": [-0.0321034091, -0.491059237],
+        "tpc_labels": "Topic 3"
+    },
+    {
+        "ndocs_active": 25000,
+        "coords": [0.0821034091, -0.091059237],
+        "tpc_labels": "Topic 4"
+    }
+]
+df = pd.DataFrame(data)
+# Extrae las coordenadas 'x' e 'y' de la columna 'coords'
+df['x'] = df['coords'].apply(lambda x: x[0])
+df['y'] = df['coords'].apply(lambda x: x[1])
+
+cuadrante1 = df[(df['x'] < 0) & (df['y'] >= 0)]
+cuadrante2 = df[(df['x'] >= 0) & (df['y'] >= 0)]
+cuadrante3 = df[(df['x'] < 0) & (df['y'] < 0)]
+cuadrante4 = df[(df['x'] >= 0) & (df['y'] < 0)]
+
+# Crea una figura de subgráficos con 2 filas y 2 columnas
+fig_topic_map = make_subplots(rows=2, cols=2)
+# Crear el gráfico de dispersión
+fig_topic_map = go.Figure()
+
+for i, row in df.iterrows():
+    fig_topic_map.add_trace(go.Scatter(
+        x=[row['coords'][0]],
+        y=[row['coords'][1]],
+        mode='markers',
+        name=row['tpc_labels'],
+        marker=dict(
+            size=row['ndocs_active'] / 500,  # Personalizar el tamaño de los círculos
+            opacity=0.5,
+        ),
+        hoverinfo='text', 
+        text=row['tpc_labels'],
+        showlegend=False  # Agregar etiquetas
+    ))
+
+# Actualizar la disposición del gráfico
+fig_topic_map.update_layout(title='Topic Map')
+fig_topic_map.update_xaxes(title_text='PC1')
+fig_topic_map.update_yaxes(title_text='PC2')
+figure=px.scatter(df, x='x', y='y', size='ndocs_active')
+
 # Initialize the app
 app = Dash(__name__)
 
@@ -174,7 +241,7 @@ app.layout = html.Div([
 
     # First row (bar charts stacked horizontally)
         html.Div([
-        dcc.Graph(id='topics',figure=fig_fund_sponsor, style={'height': '700px', 'flex': '2'}),
+        dcc.Graph(id='topic-map',figure=fig_topic_map, style={'height': '700px', 'flex': '2'}),
         dcc.Graph(id='cities',figure=fig_cities, style={'height': '700px', 'flex': '1.5'}),
     ], style={'display': 'flex', 'flex-direction': 'row'}),
 
@@ -340,16 +407,6 @@ def update_data(openaccess_click):
     #return updated_fig_map, updated_fig_cities, updated_fig_institutions, updated_fig_citedby 
     return updated_fig_citedby
 
-
-
-
 # Run the app
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', port=8050, debug=True)
-    app.logger.info(f"-- -- AAAAAAAAAAAAA")
-    """ api_resp = restapi.corpus_metadata()
-    if api_resp.status_code != 200:
-        logger.error(
-            f"-- -- Error extracting SCOPUS from Solr")
-    logger.info(f"-- -- Results from test query: {api_resp.results}")  """
-    
