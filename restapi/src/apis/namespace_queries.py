@@ -59,14 +59,6 @@ q7_parser.add_argument(
 q7_parser.add_argument(
     'institution', help="Institution by which to filter the document collection", required=True)
 
-q8_parser = reqparse.RequestParser()
-q8_parser.add_argument(
-    'model_collection', help='Name of the model collection', required=True)
-q8_parser.add_argument(
-    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
-q8_parser.add_argument(
-    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-
 q9_parser = reqparse.RequestParser()
 q9_parser.add_argument(
     'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution', required=True)
@@ -75,17 +67,11 @@ q9_parser.add_argument(
 
 q10_parser = reqparse.RequestParser()
 q10_parser.add_argument(
+    'corpus_collection', help='Name of the corpus collection', required=True)
+q10_parser.add_argument(
     'model_collection', help='Name of the model collection', required=True)
 q10_parser.add_argument(
-    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
-q10_parser.add_argument(
-    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-
-q11_parser = reqparse.RequestParser()
-q11_parser.add_argument(
-    'model_collection', help='Name of the model collection', required=True)
-q11_parser.add_argument(
-    'topic_id', help='ID of the topic whose whose word-topic distribution is to be retrieved', required=False)
+    'topic_label', help="Label of the topic whose id is retrieved", required=True)
 
 q12_parser = reqparse.RequestParser()
 q12_parser.add_argument(
@@ -101,29 +87,9 @@ q13_parser.add_argument(
 q13_parser.add_argument(
     'fund_sponsor', help='Funding Sponsor by which to filter the document collection', required=True)
 
-q15_parser = reqparse.RequestParser()
-q15_parser.add_argument(
-    'corpus_collection', help='Name of the corpus collection', required=True)
-q15_parser.add_argument(
-    'doc_id', help='ID of the document whose whose doc-topic distribution associated to a specific model is to be retrieved', required=True)
-
-q16_parser = reqparse.RequestParser()
-q16_parser.add_argument(
-    'corpus_collection', help='Name of the corpus collection', required=True)
-q16_parser.add_argument(
-    'model_name', help='Name of the model reponsible for the creation of the doc-topic distribution to be retrieved', required=True)
-q16_parser.add_argument(
-    'start', help='Specifies an offset (by default, 0) into the responses at which Solr should begin displaying content', required=False)
-q16_parser.add_argument(
-    'rows', help='Controls how many rows of responses are displayed at a time (default value: maximum number of docs in the collection)', required=False)
-
-q17_parser = reqparse.RequestParser()
-q17_parser.add_argument(
-    'model_name', help='Name of the model to retrieve the topic-word distribution.', required=True)
-q17_parser.add_argument(
-    'tpc_id', help='ID of the specific topic to retrieve the topic-word distribution.', required=True)
-q17_parser.add_argument(
-    'word', help='Word of interest to retrieve its topic-word distribution in the specified topic. If the word is not present, the distribution is 0.', required=True)
+q14_parser = reqparse.RequestParser()
+q14_parser.add_argument(
+    'model_collection', help='Name of the model collection', required=True)
 
 
 @api.route('/getOpenAccess/')
@@ -206,20 +172,6 @@ class getDocsByInstitution(Resource):
                         institution=institution)
 
 
-@api.route('/getTopicsLabels/')
-class getTopicsLabels(Resource):
-    @api.doc(parser=q8_parser)
-    def get(self):
-        args = q8_parser.parse_args()
-        model_collection = args['model_collection']
-        start = args['start']
-        rows = args['rows']
-
-        return sc.do_Q8(model_col=model_collection,
-                        start=start,
-                        rows=rows)
-
-
 @api.route('/getIdOfTopicLabel/')
 class getIdOfTopicLabel(Resource):
     @api.doc(parser=q9_parser)
@@ -232,31 +184,18 @@ class getIdOfTopicLabel(Resource):
                         topic_label=topic_label)
 
 
-@api.route('/getModelInfo/')
-class getModelInfo(Resource):
+@api.route('/getDocsByTopicLabel/')
+class getDocsByTopicLabel(Resource):
     @api.doc(parser=q10_parser)
     def get(self):
         args = q10_parser.parse_args()
+        corpus_collection = args['corpus_collection']
         model_collection = args['model_collection']
-        start = args['start']
-        rows = args['rows']
+        topic_label = args['topic_label']
 
-        return sc.do_Q10(model_col=model_collection,
-                         start=start,
-                         rows=rows)
-
-
-@api.route('/getBetasTopicById/')
-class getBetasTopicById(Resource):
-    @api.doc(parser=q11_parser)
-    def get(self):
-        args = q11_parser.parse_args()
-        model_collection = args['model_collection']
-        topic_id = args['topic_id']
-
-        return sc.do_Q11(model_col=model_collection,
-                         topic_id=topic_id)
-
+        return sc.do_Q10(corpus_col=corpus_collection,
+                         model_col=model_collection,
+                         topic_label=topic_label)
 
 @api.route('/getDocsByCitedCount/')
 class getDocsByCitedCount(Resource):
@@ -281,15 +220,12 @@ class getDocsByFundSponsor(Resource):
 
         return sc.do_Q13(corpus_col=corpus_collection,
                         fund_sponsor=fund_sponsor)
-
-
-@api.route('/getLemmasDocById/')
-class getLemmasDocById(Resource):
-    @api.doc(parser=q15_parser)
+    
+@api.route('/getTopicMap/')
+class getTopicMap(Resource):
+    @api.doc(parser=q14_parser)
     def get(self):
-        args = q15_parser.parse_args()
-        corpus_collection = args['corpus_collection']
-        doc_id = args['doc_id']
+        args = q14_parser.parse_args()
+        model_collection = args['model_collection']
 
-        return sc.do_Q15(corpus_col=corpus_collection,
-                         doc_id=doc_id)
+        return sc.do_Q14(model_col=model_collection)

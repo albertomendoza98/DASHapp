@@ -1,12 +1,3 @@
-"""
-This  module provides 2 classes to handle Inferencer API responses and requests.
-
-The InferencerResponse class handles Inferencer API response and errors, while the EWBInferencerClient class handles requests to the Inferencer API.
-
-Author: Lorena Calvo-Bartolomé
-Date: 21/05/2023
-"""
-
 import logging
 import os
 
@@ -116,15 +107,12 @@ class EWBRestapiClient(object):
 
         Parameters
         ----------
-        text_to_infer : str
-            The text to infer.
-        model_for_inference : str
-            The model to use for inference.
+        selected_category : str
 
         Returns
         -------
-        InferencerResponse: InferencerResponse
-            An object of the InferencerResponse class.
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
         """
 
         open_access = '1' if selected_category == 'Open Access' else '0'
@@ -146,29 +134,251 @@ class EWBRestapiClient(object):
 
         return api_resp
     
-    def corpus_metadata(self) -> RestAPIResponse:
+    def continent(self, 
+                  continent: str) -> RestAPIResponse:
         """Execute query to filter by open access.
 
         Parameters
         ----------
-        text_to_infer : str
-            The text to infer.
-        model_for_inference : str
-            The model to use for inference.
+        continent : str
 
         Returns
         -------
-        InferencerResponse: InferencerResponse
-            An object of the InferencerResponse class.
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
         """
         
         headers_ = {'Accept': 'application/json'}
 
         params_ = {
-            'corpus_collection': 'scopus'
+            'corpus_collection': 'scopus',
+            'continent': continent
         }
 
-        url_ = '{}/queries/getCorpusMetadataFields'.format(self.restapi_url)
+        url_ = '{}/queries/getDocsByContinent'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+    
+    def city(self, 
+                  city: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        city : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'city': city
+        }
+
+        url_ = '{}/queries/getDocsByCity'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+
+    def cited_count(self, 
+                  label: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        label : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        if label == '< 5':
+            lower_limit = '0'
+            upper_limit = '5'
+        elif label == '5 - 9':
+            lower_limit = '5'
+            upper_limit = '10'
+        elif label == '10 - 24':
+            lower_limit = '10'
+            upper_limit = '25'
+        elif label == '25 >':
+            lower_limit = '25'
+            upper_limit = '*'  
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'lower_limit': lower_limit,
+            'upper_limit': upper_limit
+        }
+
+        url_ = '{}/queries/getDocsByCitedCount'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+
+    def fund(self, 
+                  fund: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        fund : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'fund_sponsor': fund
+        }
+
+        url_ = '{}/queries/getDocsByFundSponsor'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+    
+    def institution(self, 
+                  institution: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        institution : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'institution': institution
+        }
+
+        url_ = '{}/queries/getDocsByInstitution'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+    
+    def topic_label(self, 
+                  topic_label: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        topic_label : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'model_collection': 'mallet-50',
+            'topic_label': topic_label
+        }
+
+        url_ = '{}/queries/getDocsByTopicLabel'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+    
+    def year(self, 
+                  year: str) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        year : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'corpus_collection': 'scopus',
+            'year': year
+        }
+
+        url_ = '{}/queries/getDocsByYear'.format(self.restapi_url)
+        self.logger.info(f"-- -- The restapi url is: {url_}")
+
+        # Send request to RestAPI
+        api_resp = self._do_request(
+            type="get", url=url_, timeout=120, headers=headers_, params=params_)
+
+        return api_resp
+    
+    def topic_map(self) -> RestAPIResponse:
+        """Execute query to filter by open access.
+
+        Parameters
+        ----------
+        year : str
+
+        Returns
+        -------
+        RestAPIResponse: RestAPIResponse
+            An object of the RestAPIResponse class.
+        """
+        
+        headers_ = {'Accept': 'application/json'}
+
+        params_ = {
+            'model_collection': 'mallet-50',
+        }
+
+        url_ = '{}/queries/getTopicMap'.format(self.restapi_url)
         self.logger.info(f"-- -- The restapi url is: {url_}")
 
         # Send request to RestAPI

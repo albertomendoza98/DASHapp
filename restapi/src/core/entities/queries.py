@@ -12,7 +12,8 @@ class Queries(object):
     def __init__(self) -> None:
 
         # ================================================================
-        # # Q1: getOpenAccess  ##################################################################
+        # # Q1: getOpenAccess  
+        # ##################################################################
         # # Get collection filter by Open Access or Subscription
         # ================================================================
         self.Q1 = {
@@ -22,7 +23,8 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q2: getCorpusMetadataFields  ##################################################################
+        # # Q2: getCorpusMetadataFields  
+        # ##################################################################
         # # Get the name of the metadata fields available for
         # a specific corpus collection (not all corpus have
         # the same metadata available)
@@ -34,7 +36,8 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q3: getNrDocsColl ##################################################################
+        # # Q3: getNrDocsColl 
+        # ##################################################################
         # # Get number of documents in a collection
         # http://localhost:8983/solr/{col}/select?q=*:*&wt=json&rows=0
         # ================================================================
@@ -44,7 +47,8 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q4: getDocsByYear ##################################################################
+        # # Q4: getDocsByYear 
+        # ##################################################################
         # # Get collection filter by year
         # ================================================================
         self.Q4 = {
@@ -83,18 +87,6 @@ class Queries(object):
         }
 
         # ================================================================
-        # # Q8: getTopicsLabels
-        # ################################################################
-        # # Get the label associated to each of the topics in a given model
-        # ================================================================
-        self.Q8 = {
-            'q': '*:*',
-            'fl': 'tpc_labels',
-            'start': '{}',
-            'rows': '{}'
-        }
-
-        # ================================================================
         # # Q9: getIdOfTopicLabel
         # ################################################################
         # # Get the Id of a given topic label
@@ -113,28 +105,15 @@ class Queries(object):
         # top docs, etc.) associated to each topic in a model collection
         # ================================================================
         self.Q10 = {
-            'q': '*:*',
-            'fl': 'id,betas,alphas,topic_entropy,topic_coherence,ndocs_active,tpc_descriptions,tpc_labels,coords',
+            'q': 'doctpc_{}:*{}*',
             'start': '{}',
             'rows': '{}'
         }
 
         # ================================================================
-        # # Q11: getBetasTopicById  ##################################################################
-        # # Get word distribution of a selected topic in a
-        # # model collection
-        # http://localhost:8983/solr/{col}/select?fl=betas&q=id:t{id}
-        # ================================================================
-        self.Q11 = {
-            'q': 'id:t{}',
-            'fl': 'betas',
-        }
-
-        # ================================================================
-        # # Q12: getMostCorrelatedTopics
+        # # Q12: getDocsByCitedCount
         # ################################################################
-        # # Get the most correlated topics to a given one in a selected
-        # model
+        # # Get collection filter by number of cited count
         # ================================================================
         self.Q12 = {
             'q': "citedby_count:[{} TO {}]",
@@ -153,16 +132,19 @@ class Queries(object):
             'rows': '{}'
         }
 
-
         # ================================================================
-        # # Q15: getLemmasDocById  ##################################################################
-        # # Get lemmas of a selected document in a corpus collection
-        # http://localhost:8983/solr/{col}/select?fl=all_lemmas&q=id:{id}
+        # # Q14: getTopicMap
+        # ################################################################
+        # # Get data to create the Topic Map
         # ================================================================
-        self.Q15 = {
-            'q': 'id:{}',
-            'fl': 'all_lemmas',
+        self.Q14 = {
+            'q': '*:*',
+            'fl': 'ndocs_active, coords, tpc_labels',
+            'start': '{}',
+            'rows': '{}'
         }
+
+
 
     def customize_Q1(self,
                      open_access: str,
@@ -308,13 +290,15 @@ class Queries(object):
                 'rows': rows,
             }            
             return Q5_south_america
-        else:
+        elif continent == 'world':
             Q5_world = {
                 'q': "*:*",
-                'start': self.Q6['start'].format(start),
-                'rows': self.Q6['rows'].format(rows),
+                'start': start,
+                'rows': rows,
             }
             return Q5_world
+        else:
+            return
         
 
     def customize_Q6(self,
@@ -375,33 +359,6 @@ class Queries(object):
         }
         return custom_q7
 
-    def customize_Q8(self,
-                     start: str,
-                     rows: str) -> dict:
-        """Customizes query Q8 'getTopicsLabels'
-
-        Parameters
-        ----------
-        rows: str
-            Number of rows to retrieve.
-        start: str
-            Start value.
-
-        Returns
-        -------
-        self.Q8: dict
-            The query Q8
-        """
-
-        custom_q8 = {
-            'q': self.Q8['q'],
-            'fl': self.Q8['fl'],
-            'start': self.Q8['start'].format(start),
-            'rows': self.Q8['rows'].format(rows),
-        }
-
-        return custom_q8
-
     def customize_Q9(self,
                      topic_label: str) -> dict:
         """Customizes query Q9 'getIdOfTopicLabel'
@@ -427,9 +384,11 @@ class Queries(object):
         return custom_q9
 
     def customize_Q10(self,
+                      model_col: str,
+                      topic_id: str,
                       start: str,
                       rows: str) -> dict:
-        """Customizes query Q10 'getModelInfo'
+        """Customizes query Q10 'getDocsByTopicLabel'
 
         Parameters
         ----------
@@ -444,34 +403,12 @@ class Queries(object):
         """
 
         custom_q10 = {
-            'q': self.Q10['q'],
-            'fl': self.Q10['fl'],
+            'q': self.Q10['q'].format(model_col,topic_id),
             'start': self.Q10['start'].format(start),
             'rows': self.Q10['rows'].format(rows),
         }
 
         return custom_q10
-
-    def customize_Q11(self,
-                      topic_id: str) -> dict:
-        """Customizes query Q11 'getBetasTopicById'.
-
-        Parameters
-        ----------
-        topic_id: str
-            Topic id.
-
-        Returns
-        -------
-        custom_q11: dict
-            Customized query Q11.
-        """
-
-        custom_q11 = {
-            'q': self.Q11['q'].format(topic_id),
-            'fl': self.Q11['fl']
-        }
-        return custom_q11
 
     def customize_Q12(self,
                       lower_limit: str,
@@ -533,24 +470,31 @@ class Queries(object):
         }
         
         return custom_q13
-
-    def customize_Q15(self,
-                      id: str) -> dict:
-        """Customizes query Q15 'getLemmasDocById'.
+    
+    def customize_Q14(self,
+                      start: str,
+                      rows: str) -> dict:
+        
+        """Customizes query Q14 'getTopicMap'
 
         Parameters
         ----------
-        id: str
-            Document id.
+        start: str
+            Start value.
+        rows: str
+            Number of rows to retrieve.
 
         Returns
         -------
-        custom_q15: dict
-            Customized query Q15.
+        custom_q14: dict
+            Customized query Q14.
         """
 
-        custom_q15 = {
-            'q': self.Q15['q'].format(id),
-            'fl': self.Q15['fl'],
+        custom_q14 = {
+            'q': self.Q14['q'],
+            'fl': self.Q14['fl'],
+            'start': self.Q14['start'].format(start),
+            'rows': self.Q14['rows'].format(rows),
         }
-        return custom_q15
+        
+        return custom_q14

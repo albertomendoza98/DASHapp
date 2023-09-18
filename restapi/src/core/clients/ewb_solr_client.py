@@ -582,7 +582,7 @@ class EWBSolrClient(SolrClient):
         start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
         # 3. Execute query
-        q1 = self.querier.customize_Q1(open_access=open_access, start=start, rows=10)
+        q1 = self.querier.customize_Q1(open_access=open_access, start=start, rows=rows)
         params = {k: v for k, v in q1.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -854,53 +854,6 @@ class EWBSolrClient(SolrClient):
 
         return results.docs, sc
 
-    def do_Q8(self,
-              model_col: str,
-              start: str,
-              rows: str) -> Union[dict, int]:
-        """Executes query Q8.
-
-        Parameters
-        ----------
-        model_col: str
-            Name of the model collection
-        start: str
-            Index of the first document to be retrieved
-        rows: str
-            Number of documents to be retrieved
-
-        Returns
-        -------
-        json_object: dict
-            JSON object with the results of the query.
-        sc : int
-            The status code of the response.
-        """
-
-        # 0. Convert model name to lowercase
-        model_col = model_col.lower()
-
-        # 1. Check that model_col is indeed a model collection
-        if not self.check_is_model(model_col):
-            return
-
-        # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, model_col)
-
-        # 4. Execute query
-        q8 = self.querier.customize_Q8(start=start, rows=rows)
-        params = {k: v for k, v in q8.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q8['q'], col_name=model_col, **params)
-
-        if sc != 200:
-            self.logger.error(
-                f"-- -- Error executing query Q8. Aborting operation...")
-            return
-
-        return results.docs, sc
-
     def do_Q9(self,
               model_col: str,
               topic_label: str) -> Union[dict, int]:
@@ -944,19 +897,19 @@ class EWBSolrClient(SolrClient):
         return results.docs, sc
 
     def do_Q10(self,
+               corpus_col: str,
                model_col: str,
-               start: str,
-               rows: str) -> Union[dict, int]:
+               topic_label: str) -> Union[dict, int]:
         """Executes query Q10.
 
         Parameters
         ----------
+        corpus_col: str
+            Name of the corpus collection
         model_col: str
             Name of the model collection whose information is being retrieved
-        start: str
-            Index of the first document to be retrieved
-        rows: str
-            Number of documents to be retrieved
+        topic_label: str
+            Label of the topic whose id will be retrieved
 
         Returns
         -------
@@ -966,77 +919,39 @@ class EWBSolrClient(SolrClient):
             The status code of the response.
         """
 
-        # 0. Convert model name to lowercase
+        # 0. Convert corpus and model name to lowercase
+        corpus_col = corpus_col.lower()
         model_col = model_col.lower()
 
-        # 1. Check that model_col is indeed a model collection
-        if not self.check_is_model(model_col):
+        # 1. Check that col is either a corpus or a model collection
+        if not self.check_is_corpus(corpus_col) and not self.check_is_model(model_col):
             return
 
         # 3. Customize start and rows
-        start, rows = self.custom_start_and_rows(start, rows, model_col)
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
-        # 4. Execute query
-        q10 = self.querier.customize_Q10(start=start, rows=rows)
-        params = {k: v for k, v in q10.items() if k != 'q'}
-
-        sc, results = self.execute_query(
-            q=q10['q'], col_name=model_col, **params)
+        results_docs, sc = self.do_Q9(model_col=model_col, topic_label=topic_label)
 
         if sc != 200:
             self.logger.error(
                 f"-- -- Error executing query Q10. Aborting operation...")
             return
-            
-        for el in results.docs:
-            desc = el['tpc_descriptions'].split(", ")
-            tpc_id = el['id'].split("t")[1]
-            betas_list = [word + "|" + str(self.do_Q17(model_name=model_col, tpc_id=tpc_id, word=word)[0]['betas']) for word in desc]
-            el['top_words_betas'] = ' '.join(betas_list)
-              
-        return results.docs, sc
+        
+        topic_id = results_docs[0]["id"]
 
-    def do_Q11(self,
-               model_col: str,
-               topic_id: str) -> Union[dict, int]:
-        """Executes query Q11.
-
-        Parameters
-        ----------
-        model_col : str
-            Name of the model collection.
-        topic_id : str
-            ID of the topic to be retrieved.
-
-        Returns
-        -------
-        json_object: dict
-            JSON object with the results of the query.
-        sc : int
-            The status code of the response.  
-        """
-
-        # 0. Convert corpus and model names to lowercase
-        model_col = model_col.lower()
-
-        # 1. Check that model_col is indeed a model collection
-        if not self.check_is_model(model_col):
-            return
-
-        # 3. Execute query
-        q11 = self.querier.customize_Q11(
-            topic_id=topic_id)
-        params = {k: v for k, v in q11.items() if k != 'q'}
+        # 4. Execute query
+        q10 = self.querier.customize_Q10(model_col=model_col, topic_id=topic_id, start=start, rows=rows)
+        params = {k: v for k, v in q10.items() if k != 'q'}
 
         sc, results = self.execute_query(
-            q=q11['q'], col_name=model_col, **params)
+            q=q10['q'], col_name=corpus_col, **params)
 
         if sc != 200:
             self.logger.error(
-                f"-- -- Error executing query Q11. Aborting operation...")
+                f"-- -- Error executing query Q10. Aborting operation...")
             return
-
-        return {'betas': results.docs[0]['betas']}, sc
+              
+        return results.docs, sc
 
     def do_Q12(self,
                corpus_col: str,
@@ -1066,7 +981,7 @@ class EWBSolrClient(SolrClient):
         start, rows = self.custom_start_and_rows(start=None, rows=None, col=corpus_col)
 
         # 3. Execute query
-        q12 = self.querier.customize_Q12(lower_limit=lower_limit, upper_limit=upper_limit, start=start, rows=10)
+        q12 = self.querier.customize_Q12(lower_limit=lower_limit, upper_limit=upper_limit, start=start, rows=rows)
         params = {k: v for k, v in q12.items() if k != 'q'}
 
         sc, results = self.execute_query(
@@ -1123,44 +1038,45 @@ class EWBSolrClient(SolrClient):
             return
 
         return results.docs, sc
-
-    def do_Q15(self,
-               corpus_col: str,
-               doc_id: str) -> Union[dict, int]:
-        """Executes query Q15.
+    
+    def do_Q14(self,
+               model_col: str) -> Union[dict, int]:
+        
+        """Executes query Q14.
 
         Parameters
         ----------
-        corpus_col : str
-            Name of the corpus collection.
-        id : str
-            ID of the document to be retrieved.
+        model_col : str
+            Name of the model collection.
 
         Returns
         -------
-        lemmas: dict
-            JSON object with the document's lemmas.
+        json_object: dict
+            JSON object with the results of the query.
         sc : int
             The status code of the response.  
         """
 
-        # 0. Convert corpus and model names to lowercase
-        corpus_col = corpus_col.lower()
+        # 0. Convert corpus name to lowercase
+        model_col = model_col.lower()
 
-        # 1. Check that corpus_col is indeed a corpus collection
-        if not self.check_is_corpus(corpus_col):
+        # 1. Check that model_col is indeed a corpus collection
+        if not self.check_is_model(model_col):
             return
+        
+        # 2. Customize start and rows
+        start, rows = self.custom_start_and_rows(start=None, rows=None, col=model_col)
 
-        # 2. Execute query
-        q15 = self.querier.customize_Q15(id=doc_id)
-        params = {k: v for k, v in q15.items() if k != 'q'}
+        # 3. Execute query
+        q14 = self.querier.customize_Q14(start=start, rows=rows)
+        params = {k: v for k, v in q14.items() if k != 'q'}
 
         sc, results = self.execute_query(
-            q=q15['q'], col_name=corpus_col, **params)
+            q=q14['q'], col_name=model_col, **params)
 
         if sc != 200:
             self.logger.error(
-                f"-- -- Error executing query Q15. Aborting operation...")
+                f"-- -- Error executing query Q14. Aborting operation...")
             return
 
-        return {'lemmas': results.docs[0]['all_lemmas']}, sc
+        return results.docs, sc

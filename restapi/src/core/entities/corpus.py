@@ -106,6 +106,9 @@ class Corpus(object):
         df, cols = convert_datetime_to_strftime(df)
         df[cols] = df[cols].applymap(parseTimeINSTANT)
 
+        self._logger.info(
+                f"df columns: {df.columns}")
+        
         json_str = df.to_json(orient='records')
         json_lst = json.loads(json_str)
 
